@@ -41,7 +41,7 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 			$this->settingsUpToDate();
 			// Create Activation and Deactivation Hooks
 			register_activation_hook(__FILE__, array(&$this, 'activate'));
-			register_deactivation_hook(__FILE__, array(&$this, 'deactive'));
+			register_deactivation_hook(__FILE__, array(&$this, 'deactivate'));
 			// Internationalization
 			load_plugin_textdomain('wp-updates-notifier', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/');
 			// Add Filters
