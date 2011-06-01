@@ -10,7 +10,7 @@ Sends email to notify you if there are any updates for your WordPress site. Can 
 
 == Description ==
 
-Monitors your WordPress installation for core, plugin and theme updates and emails you when they are available. This plugin is ideal if you don't login to your WordPress admin regularly or you are support a client's website.
+Monitors your WordPress installation for core, plugin and theme updates and emails you when they are available. This plugin is ideal if you don't login to your WordPress admin regularly or you support a client's website.
 
 *Features*
 
@@ -20,6 +20,17 @@ Monitors your WordPress installation for core, plugin and theme updates and emai
 - Chose if you want to be notified about active only themes and plugins updates.
 - Remove upgrade nag message to non-admin users.
 - For advanced users there are a number of filters and actions you can use. More coming soon.
+
+This plugin is a fork of [Update Notifier](http://wordpress.org/extend/plugins/update-notifier/). This plugin was forked because there seemed to be no further development on the existing plugin and there was no way to contact the original author to ask about taking ownership. WP Updates Notifier has the following improvements over Updates Notifier:
+
+- Completely rewritten from the ground up using best practises for writing WordPress plugins
+- Code wrapped in a class so better namespace.
+- You can set the cron interval, allowing for more frequent checks.
+- Update checks trigger WordPress internal update check before notification.
+- Allows you to set the 'from address'.
+- Makes use of the Settings API.
+- A number of available hooks and filters for advanced users.
+- Active support and development.
 
 == Installation ==
 
