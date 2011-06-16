@@ -4,7 +4,7 @@ Plugin Name: WP Updates Notifier
 Plugin URI: http://l3rady.com/projects/wp-updates-notifier/
 Description: Sends email to notify you if there are any updates for your WordPress site. Can notify about core, plugin and theme updates.
 Author: Scott Cariss
-Version: 1.0.2
+Version: 1.0.3
 Author URI: http://l3rady.com/
 */
 
@@ -121,7 +121,7 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 		public function enable_cron($manual_interval = false) {
 			$options = get_option(self::$options_field); // get current settings
 			$currentSchedule = wp_get_schedule(self::$cron_name); // find if a schedule already exists
-			if(false !== $manual_interval) {$options['frequency'] = $manual_interval;} // if a manual cron interval is set, use this
+			if(!empty($manual_interval)) {$options['frequency'] = $manual_interval;} // if a manual cron interval is set, use this
 			if($currentSchedule != $options['frequency']) { // check if the current schedule matches the one set in settings
 				if(in_array($options['frequency'], self::$frequency_intervals)) { // check the cron setting is valid
 					do_action("sc_wpun_disable_cron"); // remove any crons for this plugin first so we don't end up with multiple crons doing the same thing.
