@@ -4,8 +4,10 @@ Plugin Name: WP Updates Notifier
 Plugin URI: http://l3rady.com/projects/wp-updates-notifier/
 Description: Sends email to notify you if there are any updates for your WordPress site. Can notify about core, plugin and theme updates.
 Author: Scott Cariss
-Version: 1.0.4
+Version: 1.1
 Author URI: http://l3rady.com/
+Text Domain: wp-updates-notifier
+Domain Path: /languages
 */
 
 /*  Copyright 2011  Scott Cariss  (email : scott@l3rady.com)
@@ -125,7 +127,7 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 			if($currentSchedule != $options['frequency']) { // check if the current schedule matches the one set in settings
 				if(in_array($options['frequency'], self::$frequency_intervals)) { // check the cron setting is valid
 					do_action("sc_wpun_disable_cron"); // remove any crons for this plugin first so we don't end up with multiple crons doing the same thing.
-					wp_schedule_event(time(), $options['frequency'], self::$cron_name); // schedule cron for this plugin.
+					wp_schedule_event((time()+3600), $options['frequency'], self::$cron_name); // schedule cron for this plugin.
 				}
 			}
 		}
@@ -182,7 +184,7 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 				$themes_updated = false; // no theme updates
 			}
             if ($core_updated || $plugins_updated || $themes_updated) { // Did anything come back as need updating?
-                $message = __("There are updates available for your WordPress site:", "wp-updates-notifier")."\n\n".$message."\n";
+                $message = __("There are updates available for your WordPress site:", "wp-updates-notifier")."\n".$message."\n";
                 $message .= sprintf(__("Please visit %s to update.", "wp-updates-notifier"), admin_url('update-core.php'));
                 $this->send_notification_email($message); // send our notification email.
             }
@@ -201,10 +203,10 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 			$update_core = get_site_transient("update_core"); // get information of updates
 			if('upgrade' == $update_core->updates[0]->response) { // is WP core update available?
                 if($update_core->updates[0]->current != $settings['notified']['core']) { // have we already notified about this version?
-                    include( ABSPATH . WPINC . '/version.php' ); // Including this because some plugins can mess with the real version stored in the DB.
+                    require_once( ABSPATH . WPINC . '/version.php' ); // Including this because some plugins can mess with the real version stored in the DB.
                     $new_core_ver = $update_core->updates[0]->current; // The new WP core version
                     $old_core_ver = $wp_version; // the old WP core version
-                    $message .= sprintf(__("WP-Core: WordPress is out of date. Please update from version %s to %s", "wp-updates-notifier"), $old_core_ver, $new_core_ver)."\n";
+                    $message .= "\n".sprintf(__("WP-Core: WordPress is out of date. Please update from version %s to %s", "wp-updates-notifier"), $old_core_ver, $new_core_ver)."\n";
                     $settings['notified']['core'] = $new_core_ver; // set core version we are notifying about
                     update_option(self::$options_field, $settings); // update settings
                     return true; // we have updates so return true
@@ -237,9 +239,23 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 				}
                 $plugins_need_update = apply_filters('sc_wpun_plugins_need_update', $plugins_need_update); // additional filtering of plugins need update
                 if(count($plugins_need_update) >= 1) { // any plugins need updating after all the filtering gone on above?
+                    require_once(ABSPATH . 'wp-admin/includes/plugin-install.php'); // Required for plugin API
+                    require_once(ABSPATH . WPINC . '/version.php' ); // Required for WP core version
                     foreach($plugins_need_update as $key => $data) { // loop through the plugins that need updating
-                        $plugin_info = get_plugin_data(WP_PLUGIN_DIR . "/" . $key); // get plugin info
-                        $message .= sprintf(__("Plugin: %s is out of date. Please update from version %s to %s", "wp-updates-notifier"), $plugin_info['Name'], $plugin_info['Version'], $data->new_version)."\n";
+                        $plugin_info = get_plugin_data(WP_PLUGIN_DIR . "/" . $key); // get local plugin info
+                        $info = plugins_api('plugin_information', array('slug' => $data->slug )); // get repository plugin info
+                        $message .= "\n".sprintf(__("Plugin: %s is out of date. Please update from version %s to %s", "wp-updates-notifier"), $plugin_info['Name'], $plugin_info['Version'], $data->new_version)."\n";
+                        $message .= "\t".sprintf(__("Details: %s", "wp-updates-notifier"), $data->url)."\n";
+                        $message .= "\t".sprintf(__("Changelog: %s%s", "wp-updates-notifier"), $data->url, "changelog/")."\n";
+                        if ( isset($info->tested) && version_compare($info->tested, $wp_version, '>=') ) {
+                            $compat = sprintf(__('Compatibility with WordPress %1$s: 100%% (according to its author)'), $cur_wp_version);
+                        } elseif ( isset($info->compatibility[$wp_version][$data->new_version]) ) {
+                            $compat = $info->compatibility[$wp_version][$data->new_version];
+                            $compat = sprintf(__('Compatibility with WordPress %1$s: %2$d%% (%3$d "works" votes out of %4$d total)'), $wp_version, $compat[0], $compat[2], $compat[1]);
+                        } else {
+                            $compat = sprintf(__('Compatibility with WordPress %1$s: Unknown'), $wp_version);
+                        }
+                        $message .= "\t".sprintf(__("Compatibility: %s", "wp-updates-notifier"), $compat)."\n";
                         $settings['notified']['plugin'][$key] = $data->new_version; // set plugin version we are notifying about
                     }
                     update_option(self::$options_field, $settings); // save settings
@@ -276,7 +292,7 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
                 if(count($themes_need_update) >= 1) { // any themes need updating after all the filtering gone on above?
                     foreach($themes_need_update as $key => $data) { // loop through the themes that need updating
                         $theme_info = get_theme_data(WP_CONTENT_DIR . "/themes/" . $key . "/style.css"); // get theme info
-                        $message .= sprintf(__("Theme: %s is out of date. Please update from version %s to %s", "wp-updates-notifier"), $theme_info['Name'], $theme_info['Version'], $data['new_version'])."\n";
+                        $message .= "\n".sprintf(__("Theme: %s is out of date. Please update from version %s to %s", "wp-updates-notifier"), $theme_info['Name'], $theme_info['Version'], $data['new_version'])."\n";
                         $settings['notified']['theme'][$key] = $data['new_version']; // set theme version we are notifying about
                     }
                     update_option(self::$options_field, $settings); // save settings
@@ -401,6 +417,7 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 			add_settings_field("sc_wpun_settings_main_notify_plugins", __("Notify about plugin updates?", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_notify_plugins"), "wp-updates-notifier", "sc_wpun_settings_main");
 			add_settings_field("sc_wpun_settings_main_notify_themes", __("Notify about theme updates?", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_notify_themes"), "wp-updates-notifier", "sc_wpun_settings_main");
             add_settings_field("sc_wpun_settings_main_hide_updates", __("Hide core WP update nag from non-admin users?", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_hide_updates"), "wp-updates-notifier", "sc_wpun_settings_main");
+            $this->plugins_update_check($message, 1);
 		}
 		public function sc_wpun_settings_validate($input) {
 			$valid = get_option(self::$options_field);
