@@ -4,7 +4,7 @@ Plugin Name: WP Updates Notifier
 Plugin URI: http://l3rady.com/projects/wp-updates-notifier/
 Description: Sends email to notify you if there are any updates for your WordPress site. Can notify about core, plugin and theme updates.
 Author: Scott Cariss
-Version: 1.1
+Version: 1.2
 Author URI: http://l3rady.com/
 Text Domain: wp-updates-notifier
 Domain Path: /languages
@@ -417,7 +417,6 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 			add_settings_field("sc_wpun_settings_main_notify_plugins", __("Notify about plugin updates?", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_notify_plugins"), "wp-updates-notifier", "sc_wpun_settings_main");
 			add_settings_field("sc_wpun_settings_main_notify_themes", __("Notify about theme updates?", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_notify_themes"), "wp-updates-notifier", "sc_wpun_settings_main");
             add_settings_field("sc_wpun_settings_main_hide_updates", __("Hide core WP update nag from non-admin users?", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_hide_updates"), "wp-updates-notifier", "sc_wpun_settings_main");
-            $this->plugins_update_check($message, 1);
 		}
 		public function sc_wpun_settings_validate($input) {
 			$valid = get_option(self::$options_field);
@@ -428,13 +427,26 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 			} else {
 				add_settings_error("sc_wpun_settings_main_frequency", "sc_wpun_settings_main_frequency_error", __("Invalid frequency entered", "wp-updates-notifier"), "error");
 			}
-			
-			$sanitized_email_to = sanitize_email($input['notify_to']);
-			if(is_email($sanitized_email_to)) {
-				$valid['notify_to'] = $sanitized_email_to;
-			} else {
-				add_settings_error("sc_wpun_settings_main_notify_to", "sc_wpun_settings_main_notify_to_error", __("Invalid email to entered", "wp-updates-notifier"), "error");
-			}
+
+            $emails_to = explode(",", $input['notify_to']);
+            if($emails_to) {
+                $sanitized_emails = array();
+                $was_error = false;
+                foreach($emails_to as $email_to) {
+                    $address = sanitize_email(trim($email_to));
+                    if(!is_email($address)) {
+                        add_settings_error("sc_wpun_settings_main_notify_to", "sc_wpun_settings_main_notify_to_error", __("One or more email to addresses are invalid", "wp-updates-notifier"), "error");
+                        $was_error = true;
+                        break;
+                    }
+                    $sanitized_emails[] = $address;
+                }
+                if(!$was_error) {
+                    $valid['notify_to'] = implode(',', $sanitized_emails);
+                }
+            } else {
+                add_settings_error("sc_wpun_settings_main_notify_to", "sc_wpun_settings_main_notify_to_error", __("No email to address entered", "wp-updates-notifier"), "error");
+            }
 			
 			$sanitized_email_from = sanitize_email($input['notify_from']);
 			if(is_email($sanitized_email_from)) {
@@ -478,7 +490,7 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 		}
 		public function sc_wpun_settings_main_field_notify_to() {
 			$options = get_option(self::$options_field);
-			?><input id="sc_wpun_settings_main_notify_to" class="regular-text" name="<?php echo self::$options_field; ?>[notify_to]" value="<?php echo $options['notify_to']; ?>" /><?php
+			?><input id="sc_wpun_settings_main_notify_to" class="regular-text" name="<?php echo self::$options_field; ?>[notify_to]" value="<?php echo $options['notify_to']; ?>" /> <span class="description"><?php _e("Separate multiple email address with a comma (,)", "wp-updates-notifier"); ?></span><?php
 		}
 		public function sc_wpun_settings_main_field_notify_from() {
 			$options = get_option(self::$options_field);

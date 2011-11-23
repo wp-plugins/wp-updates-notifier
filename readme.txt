@@ -4,7 +4,7 @@ Donate link: http://l3rady.com/donate
 Tags: admin, theme, monitor, plugin, notification, upgrade, security
 Requires at least: 3.1
 Tested up to: 3.2.1
-Stable tag: 1.1
+Stable tag: 1.2
 
 Sends email to notify you if there are any updates for your WordPress site. Can notify about core, plugin and theme updates.
 
@@ -28,6 +28,7 @@ This plugin is a fork of [Update Notifier](http://wordpress.org/extend/plugins/u
 - You can set the cron interval, allowing for more frequent checks.
 - Update checks trigger WordPress internal update check before notification.
 - Allows you to set the 'from address'.
+- Allows you to set multiple 'to addresses'.
 - Makes use of the Settings API.
 - A number of available hooks and filters for advanced users.
 - Active support and development.
@@ -47,8 +48,12 @@ This plugin is a fork of [Update Notifier](http://wordpress.org/extend/plugins/u
 
 == Changelog ==
 
+= 1.2 =
+* Added the ability to allow multiple email address to be added to the `notify to` setting. Multiple email addresses to be comma separated.
+* Removed code from last version that was left in from dev. Caused WP to check for update on every admin page load.
+
 = 1.1 =
-* Plugin update notification email now includes links to new theme/plugin description and changelog page.
+* Plugin update notification email now includes links to new plugin description and changelog page.
 * Plugin update notification email now shows compatibility of a new plugin. This is same functionality that appears in the WP update area.
 * On plugin activation the first update check is scheduled to run an hour after rather than straight away. This stops current awaiting updates being sent to admin email before you've had chance to change the email settings.
 
