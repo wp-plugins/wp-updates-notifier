@@ -4,13 +4,13 @@ Plugin Name: WP Updates Notifier
 Plugin URI: http://l3rady.com/projects/wp-updates-notifier/
 Description: Sends email to notify you if there are any updates for your WordPress site. Can notify about core, plugin and theme updates.
 Author: Scott Cariss
-Version: 1.2
+Version: 1.3
 Author URI: http://l3rady.com/
 Text Domain: wp-updates-notifier
 Domain Path: /languages
 */
 
-/*  Copyright 2011  Scott Cariss  (email : scott@l3rady.com)
+/*  Copyright 2012  Scott Cariss  (email : scott@l3rady.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -42,21 +42,21 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 			// Check settings are up to date
 			$this->settingsUpToDate();
 			// Create Activation and Deactivation Hooks
-			register_activation_hook(__FILE__, array(&$this, 'activate'));
-			register_deactivation_hook(__FILE__, array(&$this, 'deactivate'));
+			register_activation_hook(__FILE__, array(__CLASS__, 'activate'));
+			register_deactivation_hook(__FILE__, array(__CLASS__, 'deactivate'));
 			// Internationalization
 			load_plugin_textdomain('wp-updates-notifier', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/');
 			// Add Filters
-			add_filter('plugin_action_links', array(&$this, 'plugin_action_links'), 10, 2); // Add settings link to plugin in plugin list
-            add_filter('sc_wpun_plugins_need_update', array(&$this, 'check_plugins_against_notified')); // Filter out plugins that need update if already been notified
-            add_filter('sc_wpun_themes_need_update', array(&$this, 'check_themes_against_notified')); // Filter out themes that need update if already been notified
+			add_filter('plugin_action_links', array(__CLASS__, 'plugin_action_links'), 10, 2); // Add settings link to plugin in plugin list
+            add_filter('sc_wpun_plugins_need_update', array(__CLASS__, 'check_plugins_against_notified')); // Filter out plugins that need update if already been notified
+            add_filter('sc_wpun_themes_need_update', array(__CLASS__, 'check_themes_against_notified')); // Filter out themes that need update if already been notified
 			// Add Actions
-			add_action('admin_menu', array(&$this, 'admin_settings_menu')); // Add menu to options
-			add_action('admin_init', array(&$this, 'admin_settings_init')); // Add admin init functions
-            add_action('admin_init', array(&$this, 'remove_update_nag_for_nonadmins')); // See if we remove update nag for non admins
-			add_action('sc_wpun_enable_cron', array(&$this, 'enable_cron')); // action to enable cron
-			add_action('sc_wpun_disable_cron', array(&$this, 'disable_cron')); // action to disable cron
-			add_action(self::$cron_name, array(&$this, 'do_update_check')); // action to link cron task to actual task
+			add_action('admin_menu', array(__CLASS__, 'admin_settings_menu')); // Add menu to options
+			add_action('admin_init', array(__CLASS__, 'admin_settings_init')); // Add admin init functions
+            add_action('admin_init', array(__CLASS__, 'remove_update_nag_for_nonadmins')); // See if we remove update nag for non admins
+			add_action('sc_wpun_enable_cron', array(__CLASS__, 'enable_cron')); // action to enable cron
+			add_action('sc_wpun_disable_cron', array(__CLASS__, 'disable_cron')); // action to disable cron
+			add_action(self::$cron_name, array(__CLASS__, 'do_update_check')); // action to link cron task to actual task
 		}
 		
 
@@ -172,14 +172,14 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 		public function do_update_check() {
 			$options = get_option(self::$options_field); // get settings
 			$message = ""; // start with a blank message
-			$core_updated = $this->core_update_check(&$message); // check the WP core for updates
+			$core_updated = $this->core_update_check($message); // check the WP core for updates
 			if(0 != $options['notify_plugins']) { // are we to check for plugin updates?
-				$plugins_updated = $this->plugins_update_check(&$message, $options['notify_plugins']); // check for plugin updates
+				$plugins_updated = $this->plugins_update_check($message, $options['notify_plugins']); // check for plugin updates
 			} else {
 				$plugins_updated = false; // no plugin updates
 			}
 			if(0 != $options['notify_themes']) { // are we to check for theme updates?
-				$themes_updated = $this->themes_update_check(&$message, $options['notify_themes']); // check for theme updates
+				$themes_updated = $this->themes_update_check($message, $options['notify_themes']); // check for theme updates
 			} else {
 				$themes_updated = false; // no theme updates
 			}
@@ -355,13 +355,13 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
         public function send_notification_email($message) {
             $settings = get_option(self::$options_field); // get settings
             $subject = sprintf(__("WP Updates Notifier: Updates Available @ %s", "wp-updates-notifier"), site_url());
-			add_filter('wp_mail_from', array(&$this, 'sc_wpun_wp_mail_from')); // add from filter
-			add_filter('wp_mail_from_name', array(&$this, 'sc_wpun_wp_mail_from_name')); // add from name filter
-			add_filter('wp_mail_content_type', array(&$this, 'sc_wpun_wp_mail_content_type')); // add content type filter
+			add_filter('wp_mail_from', array(__CLASS__, 'sc_wpun_wp_mail_from')); // add from filter
+			add_filter('wp_mail_from_name', array(__CLASS__, 'sc_wpun_wp_mail_from_name')); // add from name filter
+			add_filter('wp_mail_content_type', array(__CLASS__, 'sc_wpun_wp_mail_content_type')); // add content type filter
 			wp_mail($settings['notify_to'], $subject, $message); // send email
-			remove_filter('wp_mail_from', array(&$this, 'sc_wpun_wp_mail_from')); // remove from filter
-			remove_filter('wp_mail_from_name', array(&$this, 'sc_wpun_wp_mail_from_name')); // remove from name filter
-			remove_filter('wp_mail_content_type', array(&$this, 'sc_wpun_wp_mail_content_type')); // remove content type filter
+			remove_filter('wp_mail_from', array(__CLASS__, 'sc_wpun_wp_mail_from')); // remove from filter
+			remove_filter('wp_mail_from_name', array(__CLASS__, 'sc_wpun_wp_mail_from_name')); // remove from name filter
+			remove_filter('wp_mail_content_type', array(__CLASS__, 'sc_wpun_wp_mail_content_type')); // remove content type filter
 		}
 		public function sc_wpun_wp_mail_from() { $settings = get_option(self::$options_field); return $settings['notify_from']; }
 		public function sc_wpun_wp_mail_from_name() { return __("WP Updates Notifier", "wp-updates-notifier"); }
@@ -391,7 +391,7 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
          * much straight forward use of the WordPress Settings API.
          */
 		public function admin_settings_menu() {
-			$page = add_options_page('WP Updates Notifier', 'WP Updates Notifier', 'manage_options', 'wp-updates-notifier', array(&$this, 'settings_page'));
+			$page = add_options_page('WP Updates Notifier', 'WP Updates Notifier', 'manage_options', 'wp-updates-notifier', array(__CLASS__, 'settings_page'));
 		}
 		public function settings_page() {
 			?>
@@ -403,20 +403,21 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 			settings_fields("sc_wpun_settings");
 			do_settings_sections("wp-updates-notifier");
 			?>
-            <input class="button-primary" name="Submit" type="submit" value="<?php _e("Save Changes", "wp-updates-notifier"); ?>" />
+            <input class="button-primary" name="Submit" type="submit" value="<?php _e("Save settings", "wp-updates-notifier"); ?>" />
+            <input class="button" name="submitwithemail" type="submit" value="<?php _e("Save settings with test email", "wp-updates-notifier"); ?>" />
             </form>
             </div>
             <?php
 		}
 		public function admin_settings_init() {
-			register_setting(self::$options_field, self::$options_field, array(&$this, "sc_wpun_settings_validate")); // Register Main Settings
-			add_settings_section("sc_wpun_settings_main", __("Settings", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_text"), "wp-updates-notifier"); // Make settings main section
-			add_settings_field("sc_wpun_settings_main_frequency", __("Frequency to check", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_frequency"), "wp-updates-notifier", "sc_wpun_settings_main");
-			add_settings_field("sc_wpun_settings_main_notify_to", __("Notify email to", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_notify_to"), "wp-updates-notifier", "sc_wpun_settings_main");
-			add_settings_field("sc_wpun_settings_main_notify_from", __("Notify email from", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_notify_from"), "wp-updates-notifier", "sc_wpun_settings_main");
-			add_settings_field("sc_wpun_settings_main_notify_plugins", __("Notify about plugin updates?", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_notify_plugins"), "wp-updates-notifier", "sc_wpun_settings_main");
-			add_settings_field("sc_wpun_settings_main_notify_themes", __("Notify about theme updates?", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_notify_themes"), "wp-updates-notifier", "sc_wpun_settings_main");
-            add_settings_field("sc_wpun_settings_main_hide_updates", __("Hide core WP update nag from non-admin users?", "wp-updates-notifier"), array(&$this, "sc_wpun_settings_main_field_hide_updates"), "wp-updates-notifier", "sc_wpun_settings_main");
+			register_setting(self::$options_field, self::$options_field, array(__CLASS__, "sc_wpun_settings_validate")); // Register Main Settings
+			add_settings_section("sc_wpun_settings_main", __("Settings", "wp-updates-notifier"), array(__CLASS__, "sc_wpun_settings_main_text"), "wp-updates-notifier"); // Make settings main section
+			add_settings_field("sc_wpun_settings_main_frequency", __("Frequency to check", "wp-updates-notifier"), array(__CLASS__, "sc_wpun_settings_main_field_frequency"), "wp-updates-notifier", "sc_wpun_settings_main");
+			add_settings_field("sc_wpun_settings_main_notify_to", __("Notify email to", "wp-updates-notifier"), array(__CLASS__, "sc_wpun_settings_main_field_notify_to"), "wp-updates-notifier", "sc_wpun_settings_main");
+			add_settings_field("sc_wpun_settings_main_notify_from", __("Notify email from", "wp-updates-notifier"), array(__CLASS__, "sc_wpun_settings_main_field_notify_from"), "wp-updates-notifier", "sc_wpun_settings_main");
+			add_settings_field("sc_wpun_settings_main_notify_plugins", __("Notify about plugin updates?", "wp-updates-notifier"), array(__CLASS__, "sc_wpun_settings_main_field_notify_plugins"), "wp-updates-notifier", "sc_wpun_settings_main");
+			add_settings_field("sc_wpun_settings_main_notify_themes", __("Notify about theme updates?", "wp-updates-notifier"), array(__CLASS__, "sc_wpun_settings_main_field_notify_themes"), "wp-updates-notifier", "sc_wpun_settings_main");
+            add_settings_field("sc_wpun_settings_main_hide_updates", __("Hide core WP update nag from non-admin users?", "wp-updates-notifier"), array(__CLASS__, "sc_wpun_settings_main_field_hide_updates"), "wp-updates-notifier", "sc_wpun_settings_main");
 		}
 		public function sc_wpun_settings_validate($input) {
 			$valid = get_option(self::$options_field);
@@ -475,8 +476,18 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 			} else {
 				add_settings_error("sc_wpun_settings_main_hide_updates", "sc_wpun_settings_main_hide_updates_error", __("Invalid hide updates value entered", "wp-updates-notifier"), "error");
 			}
+
+            if(isset($_POST['submitwithemail'])) {
+                add_filter( 'pre_set_transient_settings_errors', array(__CLASS__, "send_test_email") );
+            }
+
 			return $valid;
 		}
+        public function send_test_email($settings_errors) {
+            if( isset($settings_errors[0]['type']) && $settings_errors[0]['type'] == "updated" ) {
+                self::send_notification_email(__("This is a test message from WP Updates Notifier.", "wp-updates-notifier"));
+            }
+        }
 		public function sc_wpun_settings_main_text() {}
 		public function sc_wpun_settings_main_field_frequency() {
 			$options = get_option(self::$options_field);
