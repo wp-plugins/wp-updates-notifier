@@ -4,7 +4,7 @@ Plugin Name: WP Updates Notifier
 Plugin URI: http://l3rady.com/projects/wp-updates-notifier/
 Description: Sends email to notify you if there are any updates for your WordPress site. Can notify about core, plugin and theme updates.
 Author: Scott Cariss
-Version: 1.3
+Version: 1.3.1
 Author URI: http://l3rady.com/
 Text Domain: wp-updates-notifier
 Domain Path: /languages
@@ -40,7 +40,7 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 
 		function __construct() {
 			// Check settings are up to date
-			$this->settingsUpToDate();
+			self::settingsUpToDate();
 			// Create Activation and Deactivation Hooks
 			register_activation_hook(__FILE__, array(__CLASS__, 'activate'));
 			register_deactivation_hook(__FILE__, array(__CLASS__, 'deactivate'));
@@ -172,21 +172,21 @@ if (!class_exists('sc_WPUpdatesNotifier')) {
 		public function do_update_check() {
 			$options = get_option(self::$options_field); // get settings
 			$message = ""; // start with a blank message
-			$core_updated = $this->core_update_check($message); // check the WP core for updates
+			$core_updated = self::core_update_check($message); // check the WP core for updates
 			if(0 != $options['notify_plugins']) { // are we to check for plugin updates?
-				$plugins_updated = $this->plugins_update_check($message, $options['notify_plugins']); // check for plugin updates
+				$plugins_updated = self::plugins_update_check($message, $options['notify_plugins']); // check for plugin updates
 			} else {
 				$plugins_updated = false; // no plugin updates
 			}
 			if(0 != $options['notify_themes']) { // are we to check for theme updates?
-				$themes_updated = $this->themes_update_check($message, $options['notify_themes']); // check for theme updates
+				$themes_updated = self::themes_update_check($message, $options['notify_themes']); // check for theme updates
 			} else {
 				$themes_updated = false; // no theme updates
 			}
             if ($core_updated || $plugins_updated || $themes_updated) { // Did anything come back as need updating?
                 $message = __("There are updates available for your WordPress site:", "wp-updates-notifier")."\n".$message."\n";
                 $message .= sprintf(__("Please visit %s to update.", "wp-updates-notifier"), admin_url('update-core.php'));
-                $this->send_notification_email($message); // send our notification email.
+                self::send_notification_email($message); // send our notification email.
             }
 		}
 		
